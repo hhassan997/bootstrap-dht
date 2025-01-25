@@ -7,22 +7,19 @@ import struct
 import time
 
 if len(sys.argv) < 3:
-	print 'usage: %s host port' % sys.argv[0]
+	print('usage: %s host port' % sys.argv[0])
 	sys.exit(1)
 
 def send_dht_message(msg, target):
 	global s
-	try:
-		print "--> ", target[0], target[1]
-		s.sendto(bencode(msg), 0, target)
-	except Exception, e:
-		print e
+	#try:
+	print("--> ", target[0], target[1])
+	s.sendto(bencode(msg), 0, target)
+	#except Exception as e:
+	#	print(e)
 
 def random_key():
-	ret = ''
-	for i in range(0, 20):
-		ret += chr(random.randint(0, 255))
-	return ret
+	return random.randbytes(20)
 
 # returns a list of tuples (list-of-nodes, client-name, ip)
 def scrape_dht_nodes(query, nodelist):
@@ -31,15 +28,15 @@ def scrape_dht_nodes(query, nodelist):
 
 	tid = random.randint(0, 65536)
 
-	msg = {'a': {'id': node_id}, 'q': query, 'y': 'q', 'ro':1, 't': '%d' % tid}
+	msg = {b'a': {b'id': node_id}, b'q': query.encode('ascii'), b'y': 'q', b'ro':1, b't': '%d' % tid}
 	if query == 'find_node':
-		msg['a']['target'] = random_key()
+		msg[b'a'][b'target'] = random_key()
 	elif query == 'get_peers':
-		msg['a']['info-hash'] = random_key()
+		msg[b'a'][b'info-hash'] = random_key()
 	elif query == 'ping':
 		pass
 	else:
-		print 'ERROR: invalid query "%s"' % query
+		print('ERROR: invalid query "%s"' % query)
 		return []
 
 	for n in nodelist:
@@ -64,17 +61,17 @@ def scrape_dht_nodes(query, nodelist):
 			continue
 		# the socket became readable
 		response, addr = s.recvfrom(1500)
-		try:
-			response = bdecode(response)
-			if response['y'] != 'r':
-				print 'ERROR: expected a response, received %s' % response
-				continue
-		except:
-			print 'ERROR: ', response
-			continue
+		#try:
+		response = bdecode(response)
+		#	if response[b'y'] != b'r':
+		#		print('ERROR: expected a response, received %s' % response)
+		#		continue
+		#except:
+		#	print('ERROR: ', response)
+		#	continue
 
 		try:
-			t = int(response['t'])
+			t = int(response[b't'])
 			# this is not the transaction id we sent
 			if t != tid: continue
 		except:
@@ -84,9 +81,9 @@ def scrape_dht_nodes(query, nodelist):
 		num_replies -= 1
 
 		try:
-			v = response['v']
+			v = response[b'v']
 		except:
-			v = ''
+			v = b''
 			pass
 
 		if len(v) == 4:
@@ -96,7 +93,7 @@ def scrape_dht_nodes(query, nodelist):
 			client = v
 
 		try:
-			nodes_str = response['r']['nodes']
+			nodes_str = response[b'r'][b'nodes']
 		except:
 			responses.append(([], client, addr))
 			continue
@@ -122,11 +119,17 @@ clients = {}
 total_timeout = 0
 total_response = 0
 
-for i in xrange(500):
-	responses = scrape_dht_nodes('find_node', [ { 'ip': sys.argv[1], 'port': int(sys.argv[2]) } ])
+target_ip = socket.gethostbyname(sys.argv[1])
+target_port = int(sys.argv[2])
+
+print(target_ip)
+print(target_port)
+
+for i in range(500):
+	responses = scrape_dht_nodes('find_node', [ { 'ip': target_ip, 'port': target_port } ])
 
 	if len(responses) == 0:
-		print 'router timeout'
+		print('router timeout')
 		continue
 
 	nodes = []
@@ -145,18 +148,18 @@ for i in xrange(500):
 		if c in clients: clients[c] += 1
 		else: clients[c] = 0
 
-	print '<-- responses: %d timeouts: %d ips: ' % (len(responses), num_pings - len(responses)),
+	print('<-- responses: %d timeouts: %d ips: ' % (len(responses), num_pings - len(responses)), end="")
 	total_response += len(responses)
 	total_timeout += num_pings - len(responses)
 
 	for ip in response_ip:
-		print '%s,' % ip[0],
-	print
+		print('%s,' % ip[0], end="")
+	print()
 	time.sleep(0.3)
 
-print 'total-up: %d total-down: %d alive-ratio: %f%%' % (total_response, total_timeout, total_response * 100.0 / float(total_response + total_timeout))
+print('total-up: %d total-down: %d alive-ratio: %f%%' % (total_response, total_timeout, total_response * 100.0 / float(total_response + total_timeout)))
 
 for i in live_nodes:
-	print i[0]
+	print(i[0])
 
-print clients
+print(clients)
