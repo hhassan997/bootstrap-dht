@@ -5,6 +5,9 @@ The DHT bootstrap server can be used as an introducer to the bittorrent
 DHT network. Like the ones running at ``router.utorrent.com`` and
 ``router.bittorrent.com``.
 
+این دستورات بر روی ubuntu 24.04 تست شده است.
+=========================================
+
 ابتدا دستورات زیر رو به صورت تک به تک اجرا کنید:
 
 ``sudo apt update``
