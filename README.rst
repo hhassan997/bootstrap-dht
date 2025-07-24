@@ -47,7 +47,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=``root``
+User=root
 WorkingDirectory=/root/bootstrap-dht
 ExecStart=/root/bootstrap-dht/dht-bootstrap ``YourServerIp`` --port ``6881``
 Restart=on-failure
